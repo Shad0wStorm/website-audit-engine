@@ -1,0 +1,39 @@
+{
+  "name": "website-audit-engine",
+  "version": "1.0.0",
+  "description": "website-audit-engine/ │ ├── src/                         # Source files │   ├── cli/                     # CLI entry and argument parsing │   │   └── index.ts             # CLI: accepts URL, flags, etc. │   │ │   ├── core/                    # Core audit logic │   │   ├── auditRunner.ts       # Main Playwright + axe runner │   │   ├── lighthouseRunner.ts  # Lighthouse integration (optional) │   │   ├── metadataScraper.ts   # Title, headings, meta, images │   │   ├── accessibilityScan.ts # axe-core integration │   │   └── crawler.ts           # (Optional) Internal link crawler │   │ │   ├── report/                  # Reporting logic │   │   ├── reportBuilder.ts     # Compiles raw data into structured report │   │   └── templates/           # HTML / Markdown templates for output │   │ │   ├── utils/                   # Reusable helpers/utilities │   │   └── fileUtils.ts         # Save files, create folders, timestamp │   │ │   └── config/                  # Configs (scan depth, toggles, themes) │       └── default.config.ts │ ├── reports/                     # Output folder for generated audits │   └── [timestamped-report]/    # One folder per audit run │ ├── tests/                       # Tests for your core logic (if needed) │ ├── .env                         # (Optional) For API keys, etc. ├── .gitignore ├── package.json ├── tsconfig.json └── README.md",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "ts-node src/cli/index.ts",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shad0wStorm/website-audit-engine.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Shad0wStorm/website-audit-engine/issues"
+  },
+  "homepage": "https://github.com/Shad0wStorm/website-audit-engine#readme",
+  "dependencies": {
+    "axe-core": "^4.10.3",
+    "chalk": "^5.4.1",
+    "commander": "^14.0.0",
+    "lighthouse": "^12.8.0",
+    "mustache": "^4.2.0",
+    "playwright": "^1.54.1"
+  },
+  "devDependencies": {
+    "@types/commander": "^2.12.0",
+    "@types/node": "^24.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}

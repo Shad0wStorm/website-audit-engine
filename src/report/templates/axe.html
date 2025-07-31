@@ -1,0 +1,16 @@
+<div class="section">
+    <h2>Accessibility Violations</h2>
+    {{#violations.length}}
+        {{#violations}}
+            <div class="violation">
+                <strong>{{id}}:</strong> {{description}}<br />
+                <em>Impact:</em> {{impact}}<br />
+                <em>Help:</em> <a href="{{helpUrl}}" target="_blank">{{help}}</a>
+                <code>Selector: {{#nodes}}{{#target}}{{.}} {{/target}}{{/nodes}}</code>
+            </div>
+        {{/Violations}}
+    {{/violations.length}}
+    {{^violations.length}}
+        <p> No violations found!</p>
+    {{/violations.length}}
+</div>
