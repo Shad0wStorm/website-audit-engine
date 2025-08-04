@@ -15,8 +15,12 @@ const execAsync = promisify(exec);
 
 export async function runLighthouseAudit(url: string): Promise<any> {
     const outputPath = path.resolve(__dirname, '../../.tmp/lighthouse-report.json');
+    const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
-    const command =  `lighthouse "${url}" --output json --output-path="${outputPath}" --quiet --chrome-flags="--headless"`;
+    const command =  `lighthouse "${url}" ` +
+        `--output json --output-path="${outputPath}" ` +
+        `--quiet --chrome-flags="--headless" ` +
+        `--chrome-path="${chromePath}"`;
 
     try {
         await execAsync(command);

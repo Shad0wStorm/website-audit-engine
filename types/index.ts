@@ -26,4 +26,6 @@ export interface ReportData {
     metadata: any;
     lighthouseReport: any;
     accessibilityReport: any;
+    a11yTotals: any;
+    lighthouseTotals: any;
 }

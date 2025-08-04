@@ -1,37 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Website Audit Report</title>
+  <title>Audit Report</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 1rem; background: #f8f9fa; color: #333; }
-    h1 { color: #0056b3; }
-    section { margin-bottom: 2rem; }
-    pre { background: #fff; padding: 1rem; border: 1px solid #ccc; overflow-x: auto; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      color: #222;
+    }
+
+    .summary {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+      justify-content: center;
+    }
+
+    .summary-card {
+      background: #fff;
+      padding: 1rem 2rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      flex: 1 1 150px;
+    }
+
+    .section {
+      margin-bottom: 2rem;
+    }
+
+    .section h2 {
+      margin-bottom: 0.5rem;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 0.25rem;
+    }
+
+    details {
+      background: #fff;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    summary {
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    ul {
+      margin-top: 0.5rem;
+      padding-left: 1.5rem;
+    }
+
+    li {
+      margin-bottom: 0.25rem;
+    }
   </style>
 </head>
+
 <body>
   <h1>Website Audit Report</h1>
 
-  <section>
-    <h2>URL</h2>
-    <p>{{url}}</p>
-  </section>
+  <div class="section">
+    <h2>Accessibility Summary</h2>
+    <div class="summary">
+      <div class="summary-card">Violations: {{accessibilityReport.violations.length}}</div>
+      <div class="summary-card">Passes: {{accessibilityReport.passes.length}}</div>
+      <div class="summary-card">Incomplete: {{accessibilityReport.incomplete.length}}</div>
+      <div class="summary-card">Best Practices: {{accessibilityReport.inapplicable.length}}</div>
+    </div>
 
-  <section>
-    <h2>Metadata</h2>
-    {{metadata}}
-  </section>
+    {{#each accessibilityReport.violations}}
+      <details>
+        <summary>🚫 {{help}} ({{impact}})</summary>
+        <p><strong>Description:</strong> {{description}}</p>
+        <p><strong>Help URL:</strong> <a href="{{helpUrl}}" target="_blank">More Info</a></p>
+        <ul>
+          {{#each nodes}}
+            <li><strong>Target:</strong> {{this.target}}<br /><strong>Failure Summary:</strong> {{this.failureSummary}}</li>
+          {{/each}}
+        </ul>
+      </details>
+    {{/each}}
+  </div>
 
-  <section>
-    <h2>Lighthouse Report</h2>
-    {{lighthouseReport}}
-  </section>
+  <div class="section">
+    <h2>Lighthouse Summary</h2>
+    <div class="summary">
+      <div class="summary-card">Performance: {{lighthouseReport.categories.performance.score}}</div>
+      <div class="summary-card">Accessibility: {{lighthouseReport.categories.accessibility.score}}</div>
+      <div class="summary-card">Best Practices: {{lighthouseReport.categories['best-practices'].score}}</div>
+      <div class="summary-card">SEO: {{lighthouseReport.categories.seo.score}}</div>
+    </div>
 
-  <section>
-    <h2>Accessibility Report</h2>
-    {{accessibilityReport}}
-  </section>
+    {{#each lighthouseReport.audits}}
+      {{#if this.score}}
+        {{#unless (lt this.score 1)}}
+          <details>
+            <summary>✅ {{this.title}}</summary>
+            <p>{{this.description}}</p>
+          </details>
+        {{/unless}}
+      {{else}}
+        <details>
+          <summary>⚠️ {{this.title}}</summary>
+          <p>{{this.description}}</p>
+        </details>
+      {{/if}}
+    {{/each}}
+  </div>
 </body>
+
 </html>
