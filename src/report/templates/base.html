@@ -6,73 +6,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Audit Report</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 1rem;
-      background-color: #f9f9f9;
-      color: #333;
-    }
-
-    h1 {
-      text-align: center;
-      color: #222;
-    }
-
-    .summary {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      margin-bottom: 2rem;
-      justify-content: center;
-    }
-
-    .summary-card {
-      background: #fff;
-      padding: 1rem 2rem;
-      border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      flex: 1 1 150px;
-    }
-
-    .section {
-      margin-bottom: 2rem;
-    }
-
-    .section h2 {
-      margin-bottom: 0.5rem;
-      border-bottom: 2px solid #ccc;
-      padding-bottom: 0.25rem;
-    }
-
-    details {
-      background: #fff;
-      margin-bottom: 1rem;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
-
-    summary {
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    ul {
-      margin-top: 0.5rem;
-      padding-left: 1.5rem;
-    }
-
-    li {
-      margin-bottom: 0.25rem;
-    }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 1rem; background-color: #f9f9f9; color: #333; }
+    h1 { text-align: center; color: #222; }
+    .summary { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; justify-content: center; }
+    .summary-card { background: #fff; padding: 1rem 2rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      text-align: center; flex: 1 1 150px; }
+    .section { margin-bottom: 2rem; }
+    .section h2 { margin-bottom: 0.5rem; border-bottom: 2px solid #ccc; padding-bottom: 0.25rem; }
+    details { background: #fff; margin-bottom: 1rem; padding: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
+    summary { font-weight: bold; cursor: pointer; }
+    ul { margin-top: 0.5rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.25rem; }
   </style>
 </head>
-
 <body>
   <h1>Website Audit Report</h1>
-
+  <div class="section">
+    <p>{{pageTitle}}</p>
+    <p>{{url}}</p>
+  </div>
+  <div class="section">
+    <h2>Screenshot</h2>
+    <img src="{{pageScreenshot}}" alt="Page Screenshot" style="max-width: 100%; border: 1px solid #ccc; border-radius: 8px;" />
+  </div>
+  <div class="section">
+    <h2>Meta Data Scan</h2>
+    <div class="summary">
+        {{#each metadata}}
+          <div class="summary-card">
+            <strong>{{this.name}}</strong><br />
+            <span>{{this.content}}</span>
+          </div>
+        {{/each}}
+    </div>
+  </div>
+  <div class="section">
+    <h2>Link Crawler Scan</h2>
+    <div class="summary">
+        {{{eachLink internalLinks}}}
+    </div>
+  </div>
   <div class="section">
     <h2>Accessibility Summary</h2>
     <div class="summary">
@@ -81,7 +54,6 @@
       <div class="summary-card">Incomplete: {{accessibilityReport.incomplete.length}}</div>
       <div class="summary-card">Best Practices: {{accessibilityReport.inapplicable.length}}</div>
     </div>
-
     {{#each accessibilityReport.violations}}
       <details>
         <summary>🚫 {{help}} ({{impact}})</summary>
@@ -95,15 +67,23 @@
       </details>
     {{/each}}
   </div>
-
   <div class="section">
     <h2>Lighthouse Summary</h2>
     <div class="summary">
-      <div class="summary-card">Performance: {{lighthouseReport.categories.performance.score}}</div>
-      <div class="summary-card">Accessibility: {{lighthouseReport.categories.accessibility.score}}</div>
-      <div class="summary-card">Best Practices: {{lighthouseReport.categories['best-practices'].score}}</div>
-      <div class="summary-card">SEO: {{lighthouseReport.categories.seo.score}}</div>
+        <span class="summary-card">
+            <strong>Performance:</strong> {{lighthouseTotals.performance}}
+        </span>
+        <span class="summary-card">
+            <strong>Accessibility:</strong> {{lighthouseTotals.accessibility}}
+        </span>
+        <span class="summary-card">
+            <strong>Best Practices:</strong> {{lighthouseTotals.bestPractices}}
+        </span>
+        <span class="summary-card">
+            <strong>SEO:</strong> {{lighthouseTotals.seo}}
+        </span>
     </div>
+
 
     {{#each lighthouseReport.audits}}
       {{#if this.score}}
@@ -122,5 +102,4 @@
     {{/each}}
   </div>
 </body>
-
 </html>

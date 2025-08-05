@@ -1,35 +1,39 @@
-// Lighthouse Integration (optional)
-
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import fs from 'fs/promises';
 import path from 'path';
-import fs from 'fs';
-
-const execAsync = promisify(exec);
+import { launch } from 'chrome-launcher';
+import lighthouse from 'lighthouse';
 
 /**
- * Runs Lighthouse CLI for a given URL and returns parsed JSON results.
- * @param url Website URL to audit
- * @returns Lighthouse audit result as JSON
+ * Run Lighthouse audit with a Chrome launcher.
  */
+export async function runLighthouseAudit(url: string): Promise<any | null> {
+  const reportPath = path.resolve(__dirname, '../../.tmp/lighthouse-report.json');
+  const chrome = await launch({ chromeFlags: ['--headless'] });
 
-export async function runLighthouseAudit(url: string): Promise<any> {
-    const outputPath = path.resolve(__dirname, '../../.tmp/lighthouse-report.json');
-    const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+  const flags: any = {
+    logLevel: 'info',
+    output: 'json',
+    onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo'],
+    port: chrome.port
+  };
 
-    const command =  `lighthouse "${url}" ` +
-        `--output json --output-path="${outputPath}" ` +
-        `--quiet --chrome-flags="--headless" ` +
-        `--chrome-path="${chromePath}"`;
+  try {
+    const result = await lighthouse(url, flags);
 
-    try {
-        await execAsync(command);
-        const raw = await fs.promises.readFile(outputPath, 'utf-8');
-        const report = JSON.parse(raw);
-
-        return report;
-    } catch (error) {
-        console.error(`[Lighthouse] Failed to run audit:`, error);
-        return null;
+    if (!result || !result.report) {
+      console.warn('[Lighthouse] No result or report returned');
+      await chrome.kill();
+      return null;
     }
+
+    const reportJson = result.report as string;
+    await fs.writeFile(reportPath, reportJson, 'utf-8');
+    await chrome.kill();
+
+    return JSON.parse(reportJson);
+  } catch (err) {
+    console.error('[Lighthouse] Audit failed:', err);
+    await chrome.kill();
+    return null;
+  }
 }

@@ -11,7 +11,7 @@ export async function runA11yScan(url: string) {
 
     try {
         await page.goto(url);
-        console.log(`[  DEBUG ♿  ] Axe-core injected`);
+        console.log(`[  DEBUG  ] Axe-core injected`);
 
         // Inject and run axe-core    
         await page.addScriptTag({ path: require.resolve('axe-core') });
@@ -23,7 +23,7 @@ export async function runA11yScan(url: string) {
             });
         });
 
-        console.log(`[DEBUG] Axe results collected`);
+        console.log(`[  DEBUG  ] Axe results collected`);
         await browser.close();
 
         // Write results to file
