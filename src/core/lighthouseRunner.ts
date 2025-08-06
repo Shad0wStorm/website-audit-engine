@@ -1,20 +1,22 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { launch } from 'chrome-launcher';
-import lighthouse from 'lighthouse';
+import { launch, LaunchedChrome } from 'chrome-launcher';
+import lighthouse, { Flags } from 'lighthouse';
+import { getErrorMessage } from '../utils/errorHandler';
 
 /**
  * Run Lighthouse audit with a Chrome launcher.
  */
 export async function runLighthouseAudit(url: string): Promise<any | null> {
   const reportPath = path.resolve(__dirname, '../../.tmp/lighthouse-report.json');
-  const chrome = await launch({ chromeFlags: ['--headless'] });
 
-  const flags: any = {
+  const chrome: LaunchedChrome = await launch({ chromeFlags: [''] });
+  
+  const flags: Flags = {
     logLevel: 'info',
     output: 'json',
     onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo'],
-    port: chrome.port
+    port: chrome.port,
   };
 
   try {
@@ -32,7 +34,7 @@ export async function runLighthouseAudit(url: string): Promise<any | null> {
 
     return JSON.parse(reportJson);
   } catch (err) {
-    console.error('[Lighthouse] Audit failed:', err);
+    console.error(`[Lighthouse] Audit failed: ${getErrorMessage(err)}`);
     await chrome.kill();
     return null;
   }

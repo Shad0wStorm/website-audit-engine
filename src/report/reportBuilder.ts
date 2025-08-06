@@ -1,65 +1,95 @@
 import fs from 'fs';
 import path from 'path';
-import Handlebars from 'handlebars';
-import type { ReportData } from '../../types';
+import { ReportData } from '../../types';
+import { generateInternalLinksSection } from './sections/internalLinks';
+import { generateAccessibilitySection } from './sections/accessibility';
+import { generateMetadataSection } from './sections/metadata';
+import { generateLighthouseSection } from './sections/lighthouse';
 
-// ─── Register Handlebars Helpers ──────────────────────────────────────────────
-Handlebars.registerHelper('eq', (a, b) => a === b);
-Handlebars.registerHelper('notEq', (a, b) => a !== b);
-Handlebars.registerHelper('gt', (a, b) => a > b);
-Handlebars.registerHelper('lt', (a, b) => a < b);
-Handlebars.registerHelper('and', (a, b) => a && b);
-Handlebars.registerHelper('or', (a, b) => a || b);
-Handlebars.registerHelper('inc', (value) => parseInt(value) + 1);
-Handlebars.registerHelper('json', (context) => JSON.stringify(context, null, 2));
-Handlebars.registerHelper('eachLink', function (items, options) {
-    if (!Array.isArray(items) || items.length === 0) {
-        return new Handlebars.SafeString('<p>No internal links found.</p>');
-    }
-    const links = items.map(link => `<li><a href="${link}" target="_blank">${link}</a></li>`).join('');
-    return new Handlebars.SafeString(`<ul>${links}</ul>`);
-});
+function loadBaseTemplate(): string {
+  const htmlTemplatePath = path.resolve(__dirname, '../report/templates/base.html');
+  return fs.readFileSync(htmlTemplatePath, 'utf-8');
+}
 
-// ─── Build HTML Report ────────────────────────────────────────────────────────
-export async function buildReport(data: ReportData, outputDir: string) {
-    const templatePath = path.join(__dirname, './templates/base.html');
-    if (!fs.existsSync(templatePath)) {
-        throw new Error(`Template not found: ${templatePath}`);
-    }
+function injectIntoTemplate(
+  html: string,
+  {
+    tabButtons = '',
+    tabContents = '',
+    url,
+    timestamp,
+  }: {
+    tabButtons: string;
+    tabContents: string;
+    url: string;
+    timestamp: string | number;
+  }
+): string {
+  return html
+    .replace('{{TAB_BUTTONS}}', tabButtons)
+    .replace('{{TAB_CONTENTS}}', tabContents)
+    .replace('{{PAGE_URL}}', url)
+    .replace('{{TIMESTAMP}}', new Date(timestamp).toLocaleString());
+}
 
-    const rawTemplate = fs.readFileSync(templatePath, 'utf-8');
-    const compiledTemplate = Handlebars.compile(rawTemplate);
+export function buildFullReport(reportData: ReportData): string {
+  const { url, timestamp, metadata, internalLinks, accessibilityReport, lighthouseResults } = reportData;
+  const html = loadBaseTemplate();
 
-    // ─── Sanitize Inputs ───────────────────────────────────────────────────────
-    const safeData: ReportData = {
-    url: data.url || '',
-    pageTitle: data.pageTitle || '',
-    pageScreenshot: data.pageScreenshot || '',
-    metadata: Array.isArray(data.metadata) ? data.metadata : [],
-    internalLinks: Array.isArray(data.internalLinks) ? data.internalLinks : [],
-    accessibilityReport: {
-        ...data.accessibilityReport,
-        violations: Array.isArray(data.accessibilityReport?.violations) ? data.accessibilityReport.violations : [],
-        incomplete: Array.isArray(data.accessibilityReport?.incomplete) ? data.accessibilityReport.incomplete : [],
-        passes: Array.isArray(data.accessibilityReport?.passes) ? data.accessibilityReport.passes : [],
-        inapplicable: Array.isArray(data.accessibilityReport?.inapplicable) ? data.accessibilityReport.inapplicable : [],
-    },
-    lighthouseReport: {
-        ...data.lighthouseReport,
-        audits: Array.isArray(data.lighthouseReport?.audits) ? data.lighthouseReport.audits : [],
-        scores: data.lighthouseReport?.scores || {}
-    },
-    a11yTotals: data.a11yTotals || { violations: 0, incomplete: 0, passes: 0, inapplicable: 0 },
-    lighthouseTotals: data.lighthouseTotals || { performance: 0, accessibility: 0, bestPractices: 0, seo: 0 }
-};
+  const tabs = [
+    { id: 'metadata', label: 'Metadata', count: Object.keys(metadata).length || 0 },
+    { id: 'links', label: 'Internal Links', count: internalLinks.length || 0 },
+    { id: 'accessibility', label: 'Accessibility', count: accessibilityReport?.violations?.length || 0 },
+    { id: 'lighthouse', label: 'Lighthouse', count: lighthouseResults ? Object.keys(lighthouseResults).length : 0 },
+  ];
+
+  const tabButtons = tabs
+    .map(({ id, label, count }) =>
+      `<button class="tablinks" onclick="openTab(event, '${id}')">${label} <span class="count">${count}</span></button>`
+    )
+    .join('');
 
 
-    const finalHtml = compiledTemplate(safeData);
-    const timestamp = Date.now();
-    const outputPath = path.join(outputDir, `audit-report-${timestamp}.html`);
+  const tabContents = [
+    generateMetadataSection(metadata),
+    generateInternalLinksSection(internalLinks),
+    generateAccessibilitySection(accessibilityReport),
+    generateLighthouseSection(lighthouseResults),
+  ].join('\n');
 
-    fs.mkdirSync(outputDir, { recursive: true });
-    fs.writeFileSync(outputPath, finalHtml, 'utf-8');
+  return injectIntoTemplate(html, { tabButtons, tabContents, url, timestamp });
+}
 
-    console.log(`[  💾  ] Report written to ${outputPath}`);
+export function buildIndividualReports(reportData: ReportData): Record<string, string> {
+  const { url, timestamp, metadata, internalLinks, accessibilityReport, lighthouseResults } = reportData;
+  const baseHtml = loadBaseTemplate();
+
+  
+
+  return {
+    'metadata-report.html': injectIntoTemplate(baseHtml, {
+      tabButtons: `<button class="tablinks active">Metadata</button>`,
+      tabContents: generateMetadataSection(metadata),
+      url,
+      timestamp,
+    }),
+    'links-report.html': injectIntoTemplate(baseHtml, {
+      tabButtons: `<button class="tablinks active">Internal Links</button>`,
+      tabContents: generateInternalLinksSection(internalLinks),
+      url,
+      timestamp,
+    }),
+    'accessibility-report.html': injectIntoTemplate(baseHtml, {
+      tabButtons: `<button class="tablinks active">Accessibility</button>`,
+      tabContents: generateAccessibilitySection(accessibilityReport),
+      url,
+      timestamp,
+    }),
+    'lighthouse-report.html': injectIntoTemplate(baseHtml, {
+      tabButtons: `<button class="tablinks active">Lighthouse</button>`,
+      tabContents: generateLighthouseSection(lighthouseResults),
+      url,
+      timestamp,
+    }),
+  };
 }

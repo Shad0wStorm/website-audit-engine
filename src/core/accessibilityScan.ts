@@ -3,6 +3,7 @@ import { chromium } from 'playwright';
 import axe from 'axe-core';
 import fs from 'fs-extra';
 import path from 'path'
+import { getErrorMessage } from '../utils/errorHandler';
 
 export async function runA11yScan(url: string) {
     const browser = await chromium.launch();
@@ -37,9 +38,9 @@ export async function runA11yScan(url: string) {
 
     } catch (error: unknown) {
         if (error instanceof Error) {
-            console.error('[A11Y SCAN FAILED]', error.message);
+            console.error(`[A11Y SCAN FAILED] ${getErrorMessage(error)}`);
         } else {
-            console.error('[A11Y SCAN FAILED] Unknown error:', error);
+            console.error(`[A11Y SCAN FAILED] Unknown error: ${getErrorMessage(error)}`);
         }
         return null
     } finally {

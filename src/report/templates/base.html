@@ -4,102 +4,164 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Audit Report</title>
+  <title>Website Audit Report</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 1rem; background-color: #f9f9f9; color: #333; }
-    h1 { text-align: center; color: #222; }
-    .summary { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; justify-content: center; }
-    .summary-card { background: #fff; padding: 1rem 2rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      text-align: center; flex: 1 1 150px; }
-    .section { margin-bottom: 2rem; }
-    .section h2 { margin-bottom: 0.5rem; border-bottom: 2px solid #ccc; padding-bottom: 0.25rem; }
-    details { background: #fff; margin-bottom: 1rem; padding: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
-    summary { font-weight: bold; cursor: pointer; }
-    ul { margin-top: 0.5rem; padding-left: 1.5rem; }
-    li { margin-bottom: 0.25rem; }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1, h2, h3 {
+      color: #2c3e50;
+    }
+    .section {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+      padding: 20px;
+    }
+    summary {
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .tab {
+      padding: 10px 20px;
+      margin-right: 10px;
+      background-color: #e0e0e0;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .tab.active {
+      background-color: #3498db;
+      color: #fff;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    img.screenshot {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    .summary-table th, .summary-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    .summary-table th {
+      background-color: #f2f2f2;
+    }
+    .issue {
+      margin-bottom: 10px;
+    }
+    .issue p {
+      margin: 0 0 5px;
+    }
   </style>
 </head>
+
 <body>
-  <h1>Website Audit Report</h1>
-  <div class="section">
-    <p>{{pageTitle}}</p>
-    <p>{{url}}</p>
-  </div>
-  <div class="section">
-    <h2>Screenshot</h2>
-    <img src="{{pageScreenshot}}" alt="Page Screenshot" style="max-width: 100%; border: 1px solid #ccc; border-radius: 8px;" />
-  </div>
-  <div class="section">
-    <h2>Meta Data Scan</h2>
-    <div class="summary">
-        {{#each metadata}}
-          <div class="summary-card">
-            <strong>{{this.name}}</strong><br />
-            <span>{{this.content}}</span>
-          </div>
-        {{/each}}
-    </div>
-  </div>
-  <div class="section">
-    <h2>Link Crawler Scan</h2>
-    <div class="summary">
-        {{{eachLink internalLinks}}}
-    </div>
-  </div>
-  <div class="section">
-    <h2>Accessibility Summary</h2>
-    <div class="summary">
-      <div class="summary-card">Violations: {{accessibilityReport.violations.length}}</div>
-      <div class="summary-card">Passes: {{accessibilityReport.passes.length}}</div>
-      <div class="summary-card">Incomplete: {{accessibilityReport.incomplete.length}}</div>
-      <div class="summary-card">Best Practices: {{accessibilityReport.inapplicable.length}}</div>
-    </div>
-    {{#each accessibilityReport.violations}}
-      <details>
-        <summary>🚫 {{help}} ({{impact}})</summary>
-        <p><strong>Description:</strong> {{description}}</p>
-        <p><strong>Help URL:</strong> <a href="{{helpUrl}}" target="_blank">More Info</a></p>
-        <ul>
-          {{#each nodes}}
-            <li><strong>Target:</strong> {{this.target}}<br /><strong>Failure Summary:</strong> {{this.failureSummary}}</li>
-          {{/each}}
-        </ul>
-      </details>
-    {{/each}}
-  </div>
-  <div class="section">
-    <h2>Lighthouse Summary</h2>
-    <div class="summary">
-        <span class="summary-card">
-            <strong>Performance:</strong> {{lighthouseTotals.performance}}
-        </span>
-        <span class="summary-card">
-            <strong>Accessibility:</strong> {{lighthouseTotals.accessibility}}
-        </span>
-        <span class="summary-card">
-            <strong>Best Practices:</strong> {{lighthouseTotals.bestPractices}}
-        </span>
-        <span class="summary-card">
-            <strong>SEO:</strong> {{lighthouseTotals.seo}}
-        </span>
+  <div class="container">
+    <h1>Website Audit Report</h1>
+    <img id="page-screenshot" class="screenshot" src="" alt="Page Screenshot" />
+    <p>URL: {{PAGE_URL}}</p>
+    <p>{{TIMESTAMP}}</p>
+
+    <div class="section">
+      <div>{{TAB_BUTTONS}}</div>
     </div>
 
+    <div class="section">
+      <div>{{TAB_CONTENT}}</div>
+    </div>
 
-    {{#each lighthouseReport.audits}}
-      {{#if this.score}}
-        {{#unless (lt this.score 1)}}
-          <details>
-            <summary>✅ {{this.title}}</summary>
-            <p>{{this.description}}</p>
-          </details>
-        {{/unless}}
-      {{else}}
-        <details>
-          <summary>⚠️ {{this.title}}</summary>
-          <p>{{this.description}}</p>
-        </details>
-      {{/if}}
-    {{/each}}
+    
   </div>
+
+  <script>
+    function switchTab(evt, tabName) {
+      const tabs = document.querySelectorAll('.tab');
+      const contents = document.querySelectorAll('.tab-content');
+      tabs.forEach(tab => tab.classList.remove('active'));
+      contents.forEach(content => content.classList.remove('active'));
+
+      evt.target.classList.add('active');
+      document.getElementById(tabName).classList.add('active');
+    }
+
+    async function loadReport() {
+      try {
+        const res = await fetch('report.json');
+        const data = await res.json();
+
+        // Screenshot
+        document.getElementById('page-screenshot').src = data.accessibilityReport.screenshotPath || '';
+
+        // Metadata
+        const meta = data.metadata;
+        document.getElementById('metadata-output').textContent = JSON.stringify(meta, null, 2);
+
+        // Internal links
+        const crawlerList = document.getElementById('crawler-output');
+        crawlerList.innerHTML = '';
+        data.internalLinks.forEach(link => {
+          const li = document.createElement('li');
+          li.textContent = link;
+          crawlerList.appendChild(li);
+        });
+
+        // Accessibility Tabs
+        ['violations', 'passes', 'incomplete', 'inapplicable'].forEach(category => {
+          const container = document.getElementById(category);
+          const issues = data.accessibilityReport[category];
+          if (!issues || issues.length === 0) {
+            container.innerHTML = `<p>No ${category} issues found.</p>`;
+            return;
+          }
+          container.innerHTML = issues.map(issue => `
+            <details class="issue">
+              <summary>${issue.id} - ${issue.help}</summary>
+              <p><strong>Impact:</strong> ${issue.impact || 'N/A'}</p>
+              <p><strong>Description:</strong> ${issue.description}</p>
+              <p><a href="${issue.helpUrl}" target="_blank">Learn more</a></p>
+              <pre>${JSON.stringify(issue.nodes, null, 2)}</pre>
+            </details>
+          `).join('');
+        });
+
+        // Lighthouse Report
+        const lighthouseFrame = document.getElementById('lighthouse-report');
+        const blob = new Blob([data.lighthouseReport.fullReportHtml], { type: 'text/html' });
+        const blobURL = URL.createObjectURL(blob);
+        lighthouseFrame.src = blobURL;
+
+      } catch (err) {
+        console.error('Failed to load report data', err);
+      }
+    }
+
+    window.onload = loadReport;
+  </script>
 </body>
+
 </html>

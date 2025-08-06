@@ -1,58 +1,63 @@
+// --- Accessibility Types ---
+
 export interface AxeNode {
-    id: string;
-    impact?: string;
-    html: string;
-    target: string[];
+  id: string;
+  impact?: string;
+  html: string;
+  target: string[];
 }
 
 export interface AxeViolation {
-    id: string;
-    impact?: string;
-    description: string;
-    help: string;
-    helpUrl: string;
-    nodes: AxeNode[];
+  id: string;
+  impact?: string;
+  description: string;
+  help: string;
+  helpUrl: string;
+  nodes: AxeNode[];
 }
 
-export interface AxeScanResults {
-    violations: AxeViolation[];
-    incomplete?: AxeViolation[];
-    passes?: AxeViolation[];
-    url?: string;
+export interface AccessibilityScanResult {
+  violations: AxeViolation[];
+  passes: AxeViolation[];
+  incomplete: AxeViolation[];
+  inapplicable: AxeViolation[];
+  screenshotPath?: string;
 }
+
+// --- Lighthouse Report ---
+
+export interface LighthouseReport {
+  performance: number;
+  accessibility: number;
+  bestPractices: number;
+  seo: number;
+  pwa?: number;
+  fullReportHtml: string;
+}
+
+// --- Metadata ---
+
+export interface Metadata {
+  title: string | null;
+  description: string | null;
+  canonical: string | null;
+  ogTitle: string | null;
+  ogDescription: string | null;
+  ogImage: string | null;
+  ogUrl: string | null;
+}
+
+// --- Core Report Structure ---
 
 export interface ReportData {
   url: string;
-  pageTitle:string;
-  pageScreenshot:string;
-  metadata: Record<string, any>;
+  timestamp: string;
+  metadata: Metadata;
   internalLinks: string[];
-  accessibilityReport: {
-    violations: any[];
-    incomplete: any[];
-    passes: any[];
-    inapplicable: any[];
-  };
-  lighthouseReport: {
-    audits: any[];
-    scores: {
-      performance: number;
-      accessibility: number;
-      bestPractices: number;
-      seo: number;
-    };
-  };
-  a11yTotals: {
-    violations: number;
-    passes: number;
-    incomplete: number;
-    inapplicable: number;
-  };
-  lighthouseTotals: {
-    performance: number;
-    accessibility: number;
-    bestPractices: number;
-    seo: number;
-  };
+  accessibilityReport: AccessibilityScanResult;
+  lighthouseResults: LighthouseReport;
 }
 
+// --- Misc Types ---
+
+export type ReportSection = string;

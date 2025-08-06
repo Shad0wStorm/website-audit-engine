@@ -4,15 +4,17 @@ import { runA11yScan } from './accessibilityScan';
 import { runLighthouseAudit } from './lighthouseRunner';
 import { crawlInternalLinks } from './crawler';
 import { scrapeMetadata } from './metadataScraper';
-import { buildReport } from '../report/reportBuilder';
+import { buildFullReport } from '../report/reportBuilder';
 import { defaultConfig } from '../config/default.config';
-
+import { getErrorMessage } from '../utils/errorHandler';
 import type { ReportData } from '../../types/index';
 import path from 'path';
 import fs from 'fs';
 
 export async function runAudit(url: string, outputDir: string = defaultConfig.outputDir) {
     console.log(`\n[ 🔍 ] Starting audit for: ${url}\n`);
+
+    let datetime = new Date().toLocaleString();
 
     try {
         console.log('[ 🧠 ] Scraping metadata...');
@@ -22,11 +24,11 @@ export async function runAudit(url: string, outputDir: string = defaultConfig.ou
         const browser = await chromium.launch({ headless: true });
         const context = await browser.newContext();
         const page = await context.newPage();
-        await page.goto(url, { waitUntil: 'domcontentloaded' });
+        await page.goto(url, { waitUntil: 'networkidle' });
 
         const pageTitle = await page.title();
 
-        console.log('[    ] Taking page screenshot...');
+        console.log('[ 🎦  ] Taking page screenshot...');
         // Create output dir if it doesn't exist
         if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir, { recursive: true });
@@ -48,39 +50,28 @@ export async function runAudit(url: string, outputDir: string = defaultConfig.ou
         await new Promise(r => setTimeout(r, 500));
 
         console.log('[ 💡 ] Running Lighthouse audit...');
-        const lighthouseReport = await runLighthouseAudit(url);
-
-        const a11yTotals = {
-            violations: accessibilityReport?.violations?.length || 0,
-            passes: accessibilityReport?.passes?.length || 0,
-            incomplete: accessibilityReport?.incomplete?.length || 0,
-            inapplicable: accessibilityReport?.inapplicable?.length || 0,
-        };
-
-        const lighthouseTotals = {
-            performance: lighthouseReport?.categories?.performance?.score || 0,
-            accessibility: lighthouseReport?.categories?.accessibility?.score || 0,
-            bestPractices: lighthouseReport?.categories?.['best-practices']?.score || 0,
-            seo: lighthouseReport?.categories?.seo?.score || 0,
-        };
+        let lighthouseResults: any = null;
+        try {
+            lighthouseResults = await runLighthouseAudit(url);
+        } catch (err) {
+            console.warn(`[  ⚠️  ] Lighthouse audit failed for ${url}: ${getErrorMessage(err)}`);
+        }
+        
 
         const reportData: ReportData = {
             url,
-            pageTitle,
-            pageScreenshot: `data:image/png;base64,${pageScreenshotBase64}`,
+            timestamp: datetime,
             metadata,
             internalLinks,
             accessibilityReport,
-            lighthouseReport,
-            a11yTotals,
-            lighthouseTotals
+            lighthouseResults,
         };
 
         console.log('[ 🛠️ ] Building report...');
-        await buildReport(reportData, outputDir);
+        await buildFullReport(reportData);
 
         console.log(`\n✅ Audit complete! Report saved to '${outputDir}'\n`);
     } catch (err) {
-        console.error(`[ ❌ ] Failed to audit ${url}:`, err);
+        console.error(`[ ❌ ] Failed to audit ${url}: ${getErrorMessage(err)}`);
     }
 }

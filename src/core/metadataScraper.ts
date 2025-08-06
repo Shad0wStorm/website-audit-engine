@@ -1,5 +1,6 @@
 // Title, headings, meta, images
 import { chromium, Browser, Page } from "playwright";
+import { getErrorMessage } from "../utils/errorHandler";
 
 export type Metadata = {
     title: string | null;
@@ -40,7 +41,7 @@ export async function scrapeMetadata(url: string): Promise<Metadata> {
         });
         return metadata;
     } catch (err) {
-        console.error(`[MetadataScraper] Failed to scrape ${url}:`, err);
+        console.error(`[MetadataScraper] Failed to scrape ${url}: ${getErrorMessage}`);
         return {
             title: null,
             description: null,
