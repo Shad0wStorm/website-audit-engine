@@ -2,166 +2,79 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Website Audit Report</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
-      margin: 0;
-      padding: 0;
-      color: #333;
-    }
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    h1, h2, h3 {
-      color: #2c3e50;
-    }
-    .section {
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      margin-bottom: 20px;
-      padding: 20px;
-    }
-    summary {
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .tabs {
-      display: flex;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-    .tab {
-      padding: 10px 20px;
-      margin-right: 10px;
-      background-color: #e0e0e0;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .tab.active {
-      background-color: #3498db;
-      color: #fff;
-    }
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-    }
-    img.screenshot {
-      width: 100%;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    .summary-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-    }
-    .summary-table th, .summary-table td {
-      border: 1px solid #ddd;
-      padding: 8px;
-    }
-    .summary-table th {
-      background-color: #f2f2f2;
-    }
-    .issue {
-      margin-bottom: 10px;
-    }
-    .issue p {
-      margin: 0 0 5px;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Website Audit Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+            background: #f8f9fa;
+            color: #212529
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        section {
+            margin-bottom: 2rem;
+        }
+
+        details {
+            margin-top: 1rem;
+        }
+
+        summary {
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        ul {
+            list-style: disc;
+            padding-left: 2rem;
+        }
+
+        pre, code {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            overflow-x: auto;
+            text-wrap: wrap;
+            display: block;
+            margin-top: 0.5rem;
+            font-family: Menlo, Monaco, Consolas, monospace;
+            font-size: 0.9rem;
+        }
+    </style>
 </head>
 
 <body>
-  <div class="container">
-    <h1>Website Audit Report</h1>
-    <img id="page-screenshot" class="screenshot" src="" alt="Page Screenshot" />
-    <p>URL: {{PAGE_URL}}</p>
-    <p>{{TIMESTAMP}}</p>
+    <main class="container">
+        <header class="header">
+            <h1>Website Audit Report</h1>
+            <h2>URL: {{URL}}</h2>
+        </header>
 
-    <div class="section">
-      <div>{{TAB_BUTTONS}}</div>
-    </div>
+        {{METADATA}}
 
-    <div class="section">
-      <div>{{TAB_CONTENT}}</div>
-    </div>
+        {{INTERNAL_LINKS}}
 
-    
-  </div>
-
-  <script>
-    function switchTab(evt, tabName) {
-      const tabs = document.querySelectorAll('.tab');
-      const contents = document.querySelectorAll('.tab-content');
-      tabs.forEach(tab => tab.classList.remove('active'));
-      contents.forEach(content => content.classList.remove('active'));
-
-      evt.target.classList.add('active');
-      document.getElementById(tabName).classList.add('active');
-    }
-
-    async function loadReport() {
-      try {
-        const res = await fetch('report.json');
-        const data = await res.json();
-
-        // Screenshot
-        document.getElementById('page-screenshot').src = data.accessibilityReport.screenshotPath || '';
-
-        // Metadata
-        const meta = data.metadata;
-        document.getElementById('metadata-output').textContent = JSON.stringify(meta, null, 2);
-
-        // Internal links
-        const crawlerList = document.getElementById('crawler-output');
-        crawlerList.innerHTML = '';
-        data.internalLinks.forEach(link => {
-          const li = document.createElement('li');
-          li.textContent = link;
-          crawlerList.appendChild(li);
-        });
-
-        // Accessibility Tabs
-        ['violations', 'passes', 'incomplete', 'inapplicable'].forEach(category => {
-          const container = document.getElementById(category);
-          const issues = data.accessibilityReport[category];
-          if (!issues || issues.length === 0) {
-            container.innerHTML = `<p>No ${category} issues found.</p>`;
-            return;
-          }
-          container.innerHTML = issues.map(issue => `
-            <details class="issue">
-              <summary>${issue.id} - ${issue.help}</summary>
-              <p><strong>Impact:</strong> ${issue.impact || 'N/A'}</p>
-              <p><strong>Description:</strong> ${issue.description}</p>
-              <p><a href="${issue.helpUrl}" target="_blank">Learn more</a></p>
-              <pre>${JSON.stringify(issue.nodes, null, 2)}</pre>
-            </details>
-          `).join('');
-        });
-
-        // Lighthouse Report
-        const lighthouseFrame = document.getElementById('lighthouse-report');
-        const blob = new Blob([data.lighthouseReport.fullReportHtml], { type: 'text/html' });
-        const blobURL = URL.createObjectURL(blob);
-        lighthouseFrame.src = blobURL;
-
-      } catch (err) {
-        console.error('Failed to load report data', err);
-      }
-    }
-
-    window.onload = loadReport;
-  </script>
+        {{ACCESSIBILITY}}
+    </main>
 </body>
 
 </html>

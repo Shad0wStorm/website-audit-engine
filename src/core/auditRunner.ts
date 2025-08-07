@@ -1,77 +1,87 @@
-// src/core/auditRunner.ts
-import { chromium } from 'playwright';
-import { runA11yScan } from './accessibilityScan';
-import { runLighthouseAudit } from './lighthouseRunner';
-import { crawlInternalLinks } from './crawler';
-import { scrapeMetadata } from './metadataScraper';
-import { buildFullReport } from '../report/reportBuilder';
-import { defaultConfig } from '../config/default.config';
-import { getErrorMessage } from '../utils/errorHandler';
-import type { ReportData } from '../../types/index';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
+import { URL } from 'url';
+import { chromium } from 'playwright';
+import { scrapeMetadata } from '../core/metadataScraper';
+import { crawlInternalLinks } from '../core/crawler';
+import { runA11yScan } from '../core/accessibilityScan';
+import { ensureDir, writeJSON } from '../utils/fileUtils';
+import { getErrorMessage } from '../utils/errorHandler';
+import { generateHtmlReport } from '../report/reportBuilder';
 
-export async function runAudit(url: string, outputDir: string = defaultConfig.outputDir) {
-    console.log(`\n[ 🔍 ] Starting audit for: ${url}\n`);
+type AuditResults = {
+  url: string;
+  metadata: Record<string, any> | string;
+  internalLinks: string[] | string;
+  accessibility: any | string;
+};
 
-    let datetime = new Date().toLocaleString();
+export async function runAudit(url: string, outputDir?: string): Promise<void> {
+  console.log(`\n🔍 Auditing: ${url}`);
+  
+  const results: AuditResults = {
+    url,
+    metadata: '',
+    internalLinks: [],
+    accessibility: '',
+  };
 
-    try {
-        console.log('[ 🧠 ] Scraping metadata...');
-        const metadata = await scrapeMetadata(url);
+  // --- Metadata Scan ---
+  try {
+    results.metadata = await scrapeMetadata(url);
+    console.log(`✅ Metadata scan complete.`);
+  } catch (err) {
+    console.error(`❌ Metadata scan failed:`, err);
+    results.metadata = getErrorMessage(err);
+  }
 
-        console.log('[ 🌐 ] Launching browser for link crawl...');
-        const browser = await chromium.launch({ headless: true });
-        const context = await browser.newContext();
-        const page = await context.newPage();
-        await page.goto(url, { waitUntil: 'networkidle' });
+  // --- Internal Links Scan ---
+  try {
+    const browser = await chromium.launch();
+    const context = await browser.newContext();
+    const page = await context.newPage();
 
-        const pageTitle = await page.title();
+    results.internalLinks = await crawlInternalLinks(page, url);
+    console.log(`✅ Internal links scan complete.`);
 
-        console.log('[ 🎦  ] Taking page screenshot...');
-        // Create output dir if it doesn't exist
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true });
-        }
+    await browser.close();
+  } catch (err) {
+    console.error(`❌ Internal link scan failed:`, err);
+    results.internalLinks = getErrorMessage(err);
+  }
 
-        const safeFilename = url.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        //const screenshotPath = path.join(outputDir, `${safeFilename}_screenshot.png`);
+  // --- Accessibility Scan ---
+  try {
+    results.accessibility = await runA11yScan(url);
+    console.log(`✅ Accessibility scan complete.`);
+  } catch (err) {
+    console.error(`❌ Accessibility scan failed:`, err);
+    results.accessibility = getErrorMessage(err);
+  }
 
-        const pageScreenshot = await page.screenshot({ type: 'png', fullPage: false });
-        const pageScreenshotBase64 = pageScreenshot.toString('base64');
+  // --- Report Output ---
+  const domain = new URL(url).hostname.replace(/\./g, '_');
+  const dateTime = new Date().toISOString().replace(/:/g, '-');
+  const jsontemp = path.resolve('./.tmp/')
+  const resolvedOutputDir = outputDir 
+    ? path.resolve(process.cwd(), outputDir)
+    : path.resolve(__dirname, './reports');
+  ensureDir(resolvedOutputDir);
 
+  // JSON Report
+  const jsonPath = path.join(jsontemp, `audit_report.json`);
+  writeJSON(jsonPath, results)
+  console.log(`📄 JSON report saved: ${jsonPath}`);
 
-        console.log('[ 🔗 ] Running link crawler scan...');
-        const internalLinks = await crawlInternalLinks(page, url);
-        await browser.close();
+  // HTML Report
+  const htmlPath = path.join(resolvedOutputDir, `audit_report_${dateTime}.html`);
+  generateHtmlReport(
+  htmlPath,
+  results.url,
+  results.metadata,
+  results.accessibility,
+  Array.isArray(results.internalLinks) ? results.internalLinks : []
+);
 
-        console.log('[ ♿ ] Running accessibility scan...');
-        const accessibilityReport = await runA11yScan(url);
-        await new Promise(r => setTimeout(r, 500));
-
-        console.log('[ 💡 ] Running Lighthouse audit...');
-        let lighthouseResults: any = null;
-        try {
-            lighthouseResults = await runLighthouseAudit(url);
-        } catch (err) {
-            console.warn(`[  ⚠️  ] Lighthouse audit failed for ${url}: ${getErrorMessage(err)}`);
-        }
-        
-
-        const reportData: ReportData = {
-            url,
-            timestamp: datetime,
-            metadata,
-            internalLinks,
-            accessibilityReport,
-            lighthouseResults,
-        };
-
-        console.log('[ 🛠️ ] Building report...');
-        await buildFullReport(reportData);
-
-        console.log(`\n✅ Audit complete! Report saved to '${outputDir}'\n`);
-    } catch (err) {
-        console.error(`[ ❌ ] Failed to audit ${url}: ${getErrorMessage(err)}`);
-    }
+  console.log(`📄 HTML report saved: ${htmlPath}`);
 }
